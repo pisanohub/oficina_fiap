@@ -39,7 +39,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/v1/api-docs/**",
                                 "/actuator/health",
-                                "/actuator/health/**").permitAll()
+                                "/actuator/health/**",
+                                "/actuator/prometheus").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/ordens/{id}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/ordens/cliente/{clienteId}").permitAll()
                         .anyRequest().authenticated()

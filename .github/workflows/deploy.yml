@@ -1,4 +1,4 @@
-name: Oficina FIAP CI-CD
+name: Oficina FIAP CI-CD - Manifestos Kubernetes
 
 on:
   push:
@@ -94,6 +94,7 @@ jobs:
       - name: Verificar cluster
         run: |
           kubectl get nodes
+          helm version
 
       - name: Criar namespace
         run: |
@@ -106,6 +107,14 @@ jobs:
       - name: Aplicar Secret
         run: |
           kubectl apply -f k8s/secrets.yaml
+
+      - name: Criar secret de ingestão do New Relic
+        shell: powershell
+        run: |
+          kubectl create secret generic newrelic-license `
+            --namespace of-fiap `
+            --from-literal="license-key=${{ secrets.NEW_RELIC_LICENSE_KEY }}" `
+            --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy PostgreSQL
         run: |
@@ -133,6 +142,29 @@ jobs:
       - name: Expor aplicação
         run: |
           kubectl apply -f k8s/app-service.yaml
+
+      - name: Expor métricas internamente
+        run: |
+          kubectl apply -f k8s/metrics-service.yaml
+
+      - name: Instalar ou atualizar integração New Relic
+        shell: powershell
+        run: |
+          helm repo add newrelic https://helm-charts.newrelic.com --force-update
+          helm repo update
+          kubectl create namespace newrelic --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create secret generic newrelic-license `
+            --namespace newrelic `
+            --from-literal="license-key=${{ secrets.NEW_RELIC_LICENSE_KEY }}" `
+            --dry-run=client -o yaml | kubectl apply -f -
+          helm upgrade --install newrelic-bundle newrelic/nri-bundle `
+            --namespace newrelic `
+            --version 8.0.14 `
+            --values k8s/newrelic-values.yaml `
+            --set global.customSecretName=newrelic-license `
+            --set global.customSecretLicenseKey=license-key `
+            --wait `
+            --timeout 10m
           
       - name: Aguardar rollout
         run: |
@@ -140,4 +172,5 @@ jobs:
 
       - name: Exibir recursos
         run: |
-          kubectl get all
+          kubectl get all -n of-fiap
+          kubectl get pods -n newrelic

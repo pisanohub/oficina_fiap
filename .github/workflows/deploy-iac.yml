@@ -1,4 +1,4 @@
-name: Oficina FIAP CI-CD
+name: Oficina FIAP CI-CD - Terraform
 
 on:
   push:
@@ -98,6 +98,7 @@ jobs:
       - name: Verificar cluster
         run: |
           kubectl get nodes
+          helm version
 
       - name: Verificar Terraform
         run: |
@@ -120,7 +121,8 @@ jobs:
           terraform plan `
             -var="image_name=${{ env.IMAGE_NAME }}" `
             -var="ghcr_username=${{ secrets.GHCR_USERNAME }}" `
-            -var="ghcr_token=${{ secrets.GHCR_TOKEN }}"
+            -var="ghcr_token=${{ secrets.GHCR_TOKEN }}" `
+            -var="new_relic_license_key=${{ secrets.NEW_RELIC_LICENSE_KEY }}"
 
       - name: Terraform Apply
         working-directory: terraform
@@ -129,7 +131,27 @@ jobs:
           terraform apply -auto-approve `
             -var="image_name=${{ env.IMAGE_NAME }}" `
             -var="ghcr_username=${{ secrets.GHCR_USERNAME }}" `
-            -var="ghcr_token=${{ secrets.GHCR_TOKEN }}"
+            -var="ghcr_token=${{ secrets.GHCR_TOKEN }}" `
+            -var="new_relic_license_key=${{ secrets.NEW_RELIC_LICENSE_KEY }}"
+
+      - name: Instalar ou atualizar integração New Relic
+        shell: powershell
+        run: |
+          helm repo add newrelic https://helm-charts.newrelic.com --force-update
+          helm repo update
+          kubectl create namespace newrelic --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create secret generic newrelic-license `
+            --namespace newrelic `
+            --from-literal="license-key=${{ secrets.NEW_RELIC_LICENSE_KEY }}" `
+            --dry-run=client -o yaml | kubectl apply -f -
+          helm upgrade --install newrelic-bundle newrelic/nri-bundle `
+            --namespace newrelic `
+            --version 8.0.14 `
+            --values k8s/newrelic-values.yaml `
+            --set global.customSecretName=newrelic-license `
+            --set global.customSecretLicenseKey=license-key `
+            --wait `
+            --timeout 10m
 
       - name: Aguardar rollout
         run: |
@@ -145,3 +167,5 @@ jobs:
       - name: Exibir recursos
         run: |
           kubectl get all -n of-fiap
+          kubectl get service spring-api-metrics -n of-fiap
+          kubectl get pods -n newrelic

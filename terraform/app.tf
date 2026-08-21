@@ -45,6 +45,14 @@ resource "kubernetes_deployment" "spring_api" {
           port {
 
             container_port = 8080
+            name           = "http"
+
+          }
+
+          port {
+
+            container_port = 8081
+            name           = "management"
 
           }
 
@@ -69,12 +77,71 @@ resource "kubernetes_deployment" "spring_api" {
 
           }
 
+          env {
+
+            name  = "SPRING_PROFILES_ACTIVE"
+            value = "newrelic"
+
+          }
+
+          env {
+
+            name  = "MANAGEMENT_SERVER_PORT"
+            value = "8081"
+
+          }
+
+          env {
+
+            name  = "OTEL_SERVICE_NAME"
+            value = "tc-oficina"
+
+          }
+
+          env {
+
+            name  = "DEPLOYMENT_ENVIRONMENT"
+            value = "production"
+
+          }
+
+          env {
+
+            name  = "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"
+            value = "https://otlp.nr-data.net/v1/traces"
+
+          }
+
+          env {
+
+            name = "NEW_RELIC_LICENSE_KEY"
+
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret.new_relic.metadata[0].name
+                key  = "license-key"
+              }
+            }
+
+          }
+
+          resources {
+            requests = {
+              cpu    = "200m"
+              memory = "256Mi"
+            }
+            limits = {
+              cpu    = "500m"
+              memory = "512Mi"
+            }
+          }
+
           readiness_probe {
 
             http_get {
 
               path = "/actuator/health/readiness"
-              port = 8080
+              port = 8081
 
             }
 
@@ -88,7 +155,7 @@ resource "kubernetes_deployment" "spring_api" {
             http_get {
 
               path = "/actuator/health/liveness"
-              port = 8080
+              port = 8081
 
             }
 
@@ -130,6 +197,58 @@ resource "kubernetes_service" "spring_api" {
     }
 
     type = "NodePort"
+
+  }
+
+}
+
+resource "kubernetes_secret" "new_relic" {
+
+  metadata {
+
+    name      = "newrelic-license"
+    namespace = kubernetes_namespace.of_fiap.metadata[0].name
+
+  }
+
+  type = "Opaque"
+
+  data = {
+    "license-key" = var.new_relic_license_key
+  }
+
+}
+
+resource "kubernetes_service" "spring_api_metrics" {
+
+  metadata {
+
+    name      = "spring-api-metrics"
+    namespace = kubernetes_namespace.of_fiap.metadata[0].name
+
+    annotations = {
+      "prometheus.io/scrape" = "true"
+      "prometheus.io/path"   = "/actuator/prometheus"
+      "prometheus.io/port"   = "8081"
+    }
+
+  }
+
+  spec {
+
+    selector = {
+      app = "spring-api"
+    }
+
+    port {
+
+      name        = "management"
+      port        = 8081
+      target_port = 8081
+
+    }
+
+    type = "ClusterIP"
 
   }
 

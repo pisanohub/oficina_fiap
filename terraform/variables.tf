@@ -9,3 +9,8 @@ variable "ghcr_token" {
 variable "image_name" {
   type = string
 }
+
+variable "new_relic_license_key" {
+  type      = string
+  sensitive = true
+}
