@@ -181,6 +181,40 @@ docker-compose up --build
 
 ---
 
+## 📡 Observabilidade (AWS Academy + New Relic)
+
+A aplicação possui tracing OpenTelemetry, métricas Prometheus, logs JSON correlacionados e healthchecks. O bundle do New Relic coleta também logs e recursos do Kubernetes.
+
+O guia completo de configuração, testes, deploy, dashboards e alertas está em [`documentacao/observabilidade-fase3-aws-academy.md`](documentacao/observabilidade-fase3-aws-academy.md).
+
+### Teste local sem New Relic
+
+```bash
+docker compose up -d postgres
+export JWT_SECRET='chave-local-com-pelo-menos-32-caracteres'
+./mvnw spring-boot:run
+
+curl http://localhost:8081/actuator/health
+curl http://localhost:8081/actuator/prometheus
+```
+
+### Teste local enviando traces
+
+```bash
+export SPRING_PROFILES_ACTIVE=newrelic
+export NEW_RELIC_LICENSE_KEY='sua-license-key'
+export DEPLOYMENT_ENVIRONMENT=local
+./mvnw spring-boot:run
+```
+
+No GitHub Actions, configure o secret `NEW_RELIC_LICENSE_KEY`. A pipeline instala o `nri-bundle` por Helm após o Terraform. O runner precisa ter `kubectl`, `terraform` e `helm`.
+
+Para configurar tudo desde a criação da chave até os testes e dashboards, siga o [passo a passo completo](documentacao/PASSO-A-PASSO-NEW-RELIC.md).
+
+Endpoints de gerenciamento ficam na porta `8081`: `/actuator/health`, `/actuator/health/liveness`, `/actuator/health/readiness`, `/actuator/metrics` e `/actuator/prometheus`.
+
+---
+
 ## 📋 Principais Endpoints
 
 ### Autenticação
@@ -215,5 +249,3 @@ docker-compose up --build
 ## 👥 Grupo
 
 SOAT15 — Pós-graduação em Arquitetura de Software · FIAP · Fase 1
-
-

@@ -1,7 +1,11 @@
 package br.com.fiap.soat15.tc_oficina.adapter.in.web;
 
 import br.com.fiap.soat15.tc_oficina.domain.exception.BusinessException;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -18,9 +22,16 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 @ControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+    private MeterRegistry meterRegistry = new SimpleMeterRegistry();
+
+    @Autowired(required = false)
+    public void setMeterRegistry(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+    }
 
     @ExceptionHandler(BusinessException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -32,6 +43,8 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(
             MethodArgumentNotValidException ex, WebRequest request) {
+
+        registrarErroHttp(HttpStatus.BAD_REQUEST);
 
         Map<String, String> validationErrors = new HashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(error ->
@@ -75,17 +88,35 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex, WebRequest request) {
+        String path = extrairPath(request);
+        log.error("Falha não tratada ao processar requisição path={}", path, ex);
+        if (path.startsWith("/api/v1/ordens")) {
+            meterRegistry.counter(
+                    "oficina.ordens.processamento.falhas",
+                    "tipo", ex.getClass().getSimpleName()
+            ).increment();
+        }
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
                 "Erro interno do servidor. Por favor, tente novamente mais tarde.", request);
     }
 
     private ResponseEntity<ErrorResponse> buildResponse(HttpStatus status, String message, WebRequest request) {
+        registrarErroHttp(status);
+
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .status(status.value())
                 .message(message)
                 .timestamp(LocalDateTime.now().format(formatter))
-                .path(request.getDescription(false).replace("uri=", ""))
+                .path(extrairPath(request))
                 .build();
         return new ResponseEntity<>(errorResponse, status);
+    }
+
+    private void registrarErroHttp(HttpStatus status) {
+        meterRegistry.counter("oficina.http.erros", "http.status", String.valueOf(status.value())).increment();
+    }
+
+    private String extrairPath(WebRequest request) {
+        return request.getDescription(false).replace("uri=", "");
     }
 }

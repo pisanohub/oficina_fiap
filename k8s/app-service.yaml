@@ -2,12 +2,12 @@ apiVersion: v1
 kind: Service
 
 metadata:
-  name: of-fiap-app
+  name: spring-api
   namespace: of-fiap
 
 spec:
   selector:
-    app: of-fiap-app
+    app: spring-api
 
   ports:
     - port: 8080

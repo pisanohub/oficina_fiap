@@ -1,0 +1,28 @@
+global:
+  cluster: of-fiap-k3s
+  licenseKey: ""
+  lowDataMode: true
+
+newrelic-infrastructure:
+  enabled: true
+
+kube-state-metrics:
+  enabled: true
+
+nri-metadata-injection:
+  enabled: true
+
+newrelic-logging:
+  enabled: true
+
+nri-prometheus:
+  enabled: true
+  config:
+    scrape_services: false
+    scrape_endpoints: true
+
+nri-kube-events:
+  enabled: true
+
+newrelic-pixie:
+  enabled: false

@@ -30,6 +30,9 @@ spec:
 
           ports:
             - containerPort: 8080
+              name: http
+            - containerPort: 8081
+              name: management
 
           envFrom:
 
@@ -38,6 +41,13 @@ spec:
 
             - secretRef:
                 name: spring-api-secret
+
+          env:
+            - name: NEW_RELIC_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: newrelic-license
+                  key: license-key
 
           resources:
             requests:
@@ -52,7 +62,7 @@ spec:
 
             httpGet:
               path: /actuator/health/readiness
-              port: 8080
+              port: 8081
 
             initialDelaySeconds: 240
             periodSeconds: 40
@@ -61,7 +71,7 @@ spec:
 
             httpGet:
               path: /actuator/health/liveness
-              port: 8080
+              port: 8081
 
             initialDelaySeconds: 360
             periodSeconds: 40

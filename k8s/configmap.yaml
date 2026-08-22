@@ -7,3 +7,8 @@ metadata:
 
 data:
   SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/oficina
+  SPRING_PROFILES_ACTIVE: newrelic
+  MANAGEMENT_SERVER_PORT: "8081"
+  OTEL_SERVICE_NAME: tc-oficina
+  DEPLOYMENT_ENVIRONMENT: production
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: https://otlp.nr-data.net/v1/traces
