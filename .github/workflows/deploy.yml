@@ -93,9 +93,25 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Instalar Helm
-        uses: azure/setup-helm@v5
-        with:
-          version: v3.18.4
+        shell: powershell
+        run: |
+          $helmVersion = "v3.18.4"
+          $helmArchive = Join-Path $env:RUNNER_TEMP "helm-$helmVersion-windows-amd64.zip"
+          $helmDirectory = Join-Path $env:RUNNER_TEMP "helm-$helmVersion-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+
+          Invoke-WebRequest `
+            -UseBasicParsing `
+            -Uri "https://get.helm.sh/helm-$helmVersion-windows-amd64.zip" `
+            -OutFile $helmArchive
+
+          Expand-Archive `
+            -LiteralPath $helmArchive `
+            -DestinationPath $helmDirectory `
+            -Force
+
+          $helmBin = Join-Path $helmDirectory "windows-amd64"
+          $helmBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          & (Join-Path $helmBin "helm.exe") version
 
       - name: Verificar cluster
         run: |
