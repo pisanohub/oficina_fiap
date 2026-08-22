@@ -93,6 +93,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Instalar Helm
+        uses: azure/setup-helm@v5
+        with:
+          version: v3.18.4
+
       - name: Verificar cluster
         run: |
           kubectl get nodes
