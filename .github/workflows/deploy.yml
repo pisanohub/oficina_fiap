@@ -100,25 +100,23 @@ jobs:
           kubectl apply -f k8s/namespace.yaml
 
       - name: Aplicar ConfigMap
+        shell: powershell
         run: |
-          kubectl apply -f k8s/configmap.yaml
-          
+          kubectl create configmap spring-api-config `
+            --from-literal=SPRING_DATASOURCE_URL="jdbc:postgresql://${{ vars.DB_HOST }}:5432/oficina" `
+            --namespace=of-fiap `
+            --dry-run=client -o yaml | kubectl apply -f -
+
       - name: Aplicar Secret
+        shell: powershell
         run: |
-          kubectl apply -f k8s/secrets.yaml
+          kubectl create secret generic spring-api-secret `
+            --from-literal=SPRING_DATASOURCE_USERNAME="${{ secrets.DB_USERNAME }}" `
+            --from-literal=SPRING_DATASOURCE_PASSWORD="${{ secrets.DB_PASSWORD }}" `
+            --from-literal=JWT_SECRET="${{ secrets.JWT_SECRET }}" `
+            --namespace=of-fiap `
+            --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Deploy PostgreSQL
-        run: |
-          kubectl apply -f k8s/postgres-deployment.yaml
-
-      - name: Expor PostgreSQL
-        run: |
-          kubectl apply -f k8s/postgres-service.yaml
-
-      - name: Aguardar PostgreSQL
-        run: |
-          kubectl rollout status deployment/postgres -n of-fiap --timeout=300s
-          
       - name: Atualizar imagem da aplicação
         shell: powershell
         run: |
