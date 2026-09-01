@@ -19,21 +19,28 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private long expiration;
 
-    public String gerarToken(String username) {
+    public String gerarToken(String username, String cpf) {
         return Jwts.builder()
                 .subject(username)
+                .claim("cpf", cpf)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getChave())
                 .compact();
     }
 
+    public String extrairCpf(String token) {
+        return getClaims(token).get("cpf", String.class);
+    }
+
     public String extrairUsername(String token) {
         return getClaims(token).getSubject();
     }
 
-    public boolean isTokenValido(String token, String username) {
-        return extrairUsername(token).equals(username) && !isTokenExpirado(token);
+    public boolean isTokenValido(String token, String username, String cpf) {
+        return extrairUsername(token).equals(username)
+                && cpf.equals(extrairCpf(token))
+                && !isTokenExpirado(token);
     }
 
     private boolean isTokenExpirado(String token) {

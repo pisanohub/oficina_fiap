@@ -25,7 +25,8 @@ class JwtServiceTest {
     @Test
     @DisplayName("Deve gerar token não nulo para um username válido")
     void deveGerarTokenNaoNulo() {
-        String token = jwtService.gerarToken("admin@oficina.com");
+        String cpf = "88417554076";
+        String token = jwtService.gerarToken("admin@oficina.com", cpf);
 
         assertThat(token).isNotNull().isNotBlank();
     }
@@ -34,26 +35,39 @@ class JwtServiceTest {
     @DisplayName("Deve extrair o username corretamente do token gerado")
     void deveExtrairUsernameDoToken() {
         String username = "admin@oficina.com";
-        String token = jwtService.gerarToken(username);
+        String cpf = "88417554076";
+        String token = jwtService.gerarToken(username, cpf);
 
         assertThat(jwtService.extrairUsername(token)).isEqualTo(username);
+    }
+
+    @Test
+    @DisplayName("Deve extrair o username corretamente do token gerado")
+    void deveExtrairCpfDoToken() {
+        String username = "admin@oficina.com";
+        String cpf = "88417554076";
+        String token = jwtService.gerarToken(username, cpf);
+
+        assertThat(jwtService.extrairCpf(token)).isEqualTo(cpf);
     }
 
     @Test
     @DisplayName("Deve validar token com username correto")
     void deveValidarTokenComUsernameCorreto() {
         String username = "admin@oficina.com";
-        String token = jwtService.gerarToken(username);
+        String cpf = "88417554076";
+        String token = jwtService.gerarToken(username, cpf);
 
-        assertThat(jwtService.isTokenValido(token, username)).isTrue();
+        assertThat(jwtService.isTokenValido(token, username, cpf)).isTrue();
     }
 
     @Test
     @DisplayName("Deve retornar false para token com username diferente")
     void deveRetornarFalseParaUsernameErrado() {
-        String token = jwtService.gerarToken("admin@oficina.com");
+        String cpf = "88417554076";
+        String token = jwtService.gerarToken("admin@oficina.com", cpf);
 
-        assertThat(jwtService.isTokenValido(token, "outro@oficina.com")).isFalse();
+        assertThat(jwtService.isTokenValido(token, "outro@oficina.com", cpf)).isFalse();
     }
 
     @Test
@@ -61,18 +75,20 @@ class JwtServiceTest {
     void deveLancarExcecaoParaTokenExpirado() {
         // gera token com expiração de -1ms (já expirado)
         ReflectionTestUtils.setField(jwtService, "expiration", -1L);
-        String token = jwtService.gerarToken("admin@oficina.com");
+        String cpf = "88417554076";
+        String token = jwtService.gerarToken("admin@oficina.com", cpf);
 
         // JJWT lança ExpiredJwtException ao parsear token expirado
-        assertThatThrownBy(() -> jwtService.isTokenValido(token, "admin@oficina.com"))
+        assertThatThrownBy(() -> jwtService.isTokenValido(token, "admin@oficina.com", cpf))
                 .isInstanceOf(ExpiredJwtException.class);
     }
 
     @Test
     @DisplayName("Deve gerar tokens distintos para usernames diferentes")
     void deveGerarTokensDistintosParaUsernamesDiferentes() {
-        String token1 = jwtService.gerarToken("user1@oficina.com");
-        String token2 = jwtService.gerarToken("user2@oficina.com");
+        String cpf = "88417554076";
+        String token1 = jwtService.gerarToken("user1@oficina.com", cpf);
+        String token2 = jwtService.gerarToken("user2@oficina.com", cpf);
 
         assertThat(token1).isNotEqualTo(token2);
     }

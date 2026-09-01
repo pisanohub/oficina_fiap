@@ -8,6 +8,7 @@ import br.com.fiap.soat15.tc_oficina.domain.service.AuthService;
 import br.com.fiap.soat15.tc_oficina.adapter.out.persistence.repository.UsuarioRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,16 @@ public class AuthServiceImpl implements AuthService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
-        String token = jwtService.gerarToken(request.getUsername());
+
+        Usuario usuario = usuarioRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new BadCredentialsException("Usuário não encontrado"));
+
+        String cpfNormalizado = normalizeCpf(request.getCpf());
+        if (!usuario.getCpf().equals(cpfNormalizado)) {
+            throw new BadCredentialsException("CPF inválido");
+        }
+
+        String token = jwtService.gerarToken(request.getUsername(), cpfNormalizado);
         return new LoginResponse(token);
     }
 
@@ -38,6 +48,11 @@ public class AuthServiceImpl implements AuthService {
         usuarioRepository.save(Usuario.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .cpf(normalizeCpf(request.getCpf()))
                 .build());
+    }
+
+    private String normalizeCpf(String cpf) {
+        return cpf.replaceAll("\\D", "");
     }
 }
