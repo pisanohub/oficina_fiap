@@ -6,8 +6,12 @@ import br.com.fiap.soat15.tc_oficina.domain.entity.*;
 import br.com.fiap.soat15.tc_oficina.domain.exception.BusinessException;
 import br.com.fiap.soat15.tc_oficina.domain.service.OrdemDeServicoService;
 import lombok.RequiredArgsConstructor;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -36,6 +40,7 @@ public class OrdemDeServicoServiceImpl implements OrdemDeServicoService {
     private final ServicoRepository servicoRepository;
     private final ItemEstoqueRepository itemEstoqueRepository;
     private final ItemOSRepository itemOSRepository;
+    private final MeterRegistry meterRegistry;
 
     @Override
     @Transactional
@@ -60,12 +65,14 @@ public class OrdemDeServicoServiceImpl implements OrdemDeServicoService {
                 .servico(servico)
                 .status(StatusOS.ABERTA)
                 .dataAbertura(LocalDateTime.now())
+                .dataUltimaMudancaStatus(LocalDateTime.now())
                 .descricaoProblema(dto.getDescricaoProblema())
                 .observacoes(dto.getObservacoes())
                 .valorTotal(BigDecimal.ZERO)
                 .build();
 
         OrdemDeServico ordemSalva = ordemRepository.save(ordem);
+        executarAposCommit(() -> meterRegistry.counter("oficina.ordens.criadas").increment());
 
         if (dto.getItensEstoqueCadastro() == null || dto.getItensEstoqueCadastro().isEmpty())
             return toDTO(ordemSalva);
@@ -161,24 +168,34 @@ public class OrdemDeServicoServiceImpl implements OrdemDeServicoService {
     @Transactional
     public OrdemDeServicoDTO avancarStatus(Long id, AvancarStatusDTO dto) {
         OrdemDeServico ordem = buscarEntidade(id);
+        StatusOS statusAtual = ordem.getStatus();
         validarTransicao(ordem.getStatus(), dto.getNovoStatus());
+        LocalDateTime momentoTransicao = LocalDateTime.now();
+
+        registrarTempoNoStatusAnterior(ordem, statusAtual, momentoTransicao);
 
         ordem.setStatus(dto.getNovoStatus());
+        ordem.setDataUltimaMudancaStatus(momentoTransicao);
+        executarAposCommit(() -> meterRegistry.counter(
+                    "oficina.ordens.transicoes.status",
+                    Tags.of("de", statusAtual.name(), "para", dto.getNovoStatus().name())
+            ).increment());
 
         if (dto.getObservacoes() != null && !dto.getObservacoes().isBlank()) {
             ordem.setObservacoes(dto.getObservacoes());
         }
 
         if (dto.getNovoStatus() == StatusOS.EM_EXECUCAO) {
-            ordem.setDataInicioExecucao(LocalDateTime.now());
+            ordem.setDataInicioExecucao(momentoTransicao);
         }
 
         if (dto.getNovoStatus() == StatusOS.CONCLUIDA) {
             recalcularTempoMedioServicos(ordem);
+            registrarTempoExecucao(ordem, momentoTransicao);
         } else if (dto.getNovoStatus() == StatusOS.ENTREGUE) {
-            ordem.setDataFechamento(LocalDateTime.now());
+            ordem.setDataFechamento(momentoTransicao);
         } else if (dto.getNovoStatus() == StatusOS.CANCELADA) {
-            ordem.setDataFechamento(LocalDateTime.now());
+            ordem.setDataFechamento(momentoTransicao);
         }
 
         return toDTO(ordemRepository.save(ordem));
@@ -307,6 +324,46 @@ public class OrdemDeServicoServiceImpl implements OrdemDeServicoService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .add(ordem.getServico().getPreco());
         ordem.setValorTotal(total);
+    }
+
+    private void registrarTempoNoStatusAnterior(OrdemDeServico ordem, StatusOS statusAtual, LocalDateTime momentoTransicao) {
+        LocalDateTime inicioStatus = ofNullable(ordem.getDataUltimaMudancaStatus()).orElse(ordem.getDataAbertura());
+        Duration tempoNoStatus = Duration.between(inicioStatus, momentoTransicao);
+        if (tempoNoStatus.isZero() || tempoNoStatus.isNegative()) {
+            return;
+        }
+
+        executarAposCommit(() -> meterRegistry.timer(
+                    "oficina.ordens.status.duracao",
+                    Tags.of("status", statusAtual.name())
+            ).record(tempoNoStatus));
+    }
+
+    private void registrarTempoExecucao(OrdemDeServico ordem, LocalDateTime momentoFinalizacao) {
+        if (ordem.getDataInicioExecucao() == null) {
+            return;
+        }
+
+        Duration duracaoExecucao = Duration.between(ordem.getDataInicioExecucao(), momentoFinalizacao);
+        if (duracaoExecucao.isZero() || duracaoExecucao.isNegative()) {
+            return;
+        }
+
+        executarAposCommit(() -> meterRegistry.timer("oficina.ordens.execucao.duracao").record(duracaoExecucao));
+    }
+
+    private void executarAposCommit(Runnable registroMetrica) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            registroMetrica.run();
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                registroMetrica.run();
+            }
+        });
     }
 
     private String gerarNumero() {

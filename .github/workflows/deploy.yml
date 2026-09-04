@@ -1,4 +1,4 @@
-name: Oficina FIAP CI-CD
+name: Oficina FIAP CI-CD - Manifestos Kubernetes
 
 on:
   push:
@@ -91,9 +91,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Instalar Helm
+        shell: powershell
+        run: |
+          $helmVersion = "v3.18.4"
+          $helmArchive = Join-Path $env:RUNNER_TEMP "helm-$helmVersion-windows-amd64.zip"
+          $helmDirectory = Join-Path $env:RUNNER_TEMP "helm-$helmVersion-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+
+          Invoke-WebRequest `
+            -UseBasicParsing `
+            -Uri "https://get.helm.sh/helm-$helmVersion-windows-amd64.zip" `
+            -OutFile $helmArchive
+
+          Expand-Archive `
+            -LiteralPath $helmArchive `
+            -DestinationPath $helmDirectory `
+            -Force
+
+          $helmBin = Join-Path $helmDirectory "windows-amd64"
+          $helmBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          & (Join-Path $helmBin "helm.exe") version
+
       - name: Verificar cluster
         run: |
           kubectl get nodes
+          helm version
 
       - name: Criar namespace
         run: |
@@ -104,6 +126,11 @@ jobs:
         run: |
           kubectl create configmap spring-api-config `
             --from-literal=SPRING_DATASOURCE_URL="jdbc:postgresql://${{ vars.DB_HOST }}:5432/oficina" `
+            --from-literal=SPRING_PROFILES_ACTIVE="newrelic" `
+            --from-literal=MANAGEMENT_SERVER_PORT="8081" `
+            --from-literal=OTEL_SERVICE_NAME="tc-oficina" `
+            --from-literal=DEPLOYMENT_ENVIRONMENT="production" `
+            --from-literal=OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="https://otlp.nr-data.net/v1/traces" `
             --namespace=of-fiap `
             --dry-run=client -o yaml | kubectl apply -f -
 
@@ -115,6 +142,14 @@ jobs:
             --from-literal=SPRING_DATASOURCE_PASSWORD="${{ secrets.DB_PASSWORD }}" `
             --from-literal=JWT_SECRET="${{ secrets.JWT_SECRET }}" `
             --namespace=of-fiap `
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Criar secret de ingestão do New Relic
+        shell: powershell
+        run: |
+          kubectl create secret generic newrelic-license `
+            --namespace of-fiap `
+            --from-literal="license-key=${{ secrets.NEW_RELIC_LICENSE_KEY }}" `
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Atualizar imagem da aplicação
@@ -131,6 +166,29 @@ jobs:
       - name: Expor aplicação
         run: |
           kubectl apply -f k8s/app-service.yaml
+
+      - name: Expor métricas internamente
+        run: |
+          kubectl apply -f k8s/metrics-service.yaml
+
+      - name: Instalar ou atualizar integração New Relic
+        shell: powershell
+        run: |
+          helm repo add newrelic https://helm-charts.newrelic.com --force-update
+          helm repo update
+          kubectl create namespace newrelic --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create secret generic newrelic-license `
+            --namespace newrelic `
+            --from-literal="license-key=${{ secrets.NEW_RELIC_LICENSE_KEY }}" `
+            --dry-run=client -o yaml | kubectl apply -f -
+          helm upgrade --install newrelic-bundle newrelic/nri-bundle `
+            --namespace newrelic `
+            --version 8.0.14 `
+            --values k8s/newrelic-values.yaml `
+            --set global.customSecretName=newrelic-license `
+            --set global.customSecretLicenseKey=license-key `
+            --wait `
+            --timeout 10m
           
       - name: Aguardar rollout
         run: |
@@ -138,4 +196,5 @@ jobs:
 
       - name: Exibir recursos
         run: |
-          kubectl get all
+          kubectl get all -n of-fiap
+          kubectl get pods -n newrelic

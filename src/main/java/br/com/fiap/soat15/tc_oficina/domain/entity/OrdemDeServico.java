@@ -40,6 +40,9 @@ public class OrdemDeServico {
     private LocalDateTime dataAbertura;
 
     @Column
+    private LocalDateTime dataUltimaMudancaStatus;
+
+    @Column
     private LocalDateTime dataInicioExecucao;
 
     @Column

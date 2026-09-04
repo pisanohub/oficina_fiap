@@ -181,6 +181,38 @@ docker-compose up --build
 
 ---
 
+## 📡 Observabilidade (AWS Academy + New Relic)
+
+A aplicação possui tracing OpenTelemetry, métricas Prometheus, logs JSON correlacionados e healthchecks. O bundle do New Relic coleta também logs e recursos do Kubernetes.
+
+### Teste local sem New Relic
+
+```bash
+docker compose up -d postgres
+export JWT_SECRET='chave-local-com-pelo-menos-32-caracteres'
+./mvnw spring-boot:run
+
+curl http://localhost:8081/actuator/health
+curl http://localhost:8081/actuator/prometheus
+```
+
+### Teste local enviando traces
+
+```bash
+export SPRING_PROFILES_ACTIVE=newrelic
+export NEW_RELIC_LICENSE_KEY='sua-license-key'
+export DEPLOYMENT_ENVIRONMENT=local
+./mvnw spring-boot:run
+```
+
+No GitHub Actions, configure o secret `NEW_RELIC_LICENSE_KEY`. O deploy da aplicação usa os manifests da pasta `k8s` com `kubectl` e instala o `nri-bundle` por Helm. A própria pipeline baixa o Helm no runner Windows; o Terraform da aplicação não participa desse fluxo.
+
+O endpoint e as credenciais do RDS são fornecidos pelas variables e secrets `DB_HOST`, `DB_USERNAME` e `DB_PASSWORD` do GitHub Actions.
+
+Endpoints de gerenciamento ficam na porta `8081`: `/actuator/health`, `/actuator/health/liveness`, `/actuator/health/readiness`, `/actuator/metrics` e `/actuator/prometheus`.
+
+---
+
 ## 📋 Principais Endpoints
 
 ### Autenticação
@@ -215,5 +247,3 @@ docker-compose up --build
 ## 👥 Grupo
 
 SOAT15 — Pós-graduação em Arquitetura de Software · FIAP · Fase 1
-
-
