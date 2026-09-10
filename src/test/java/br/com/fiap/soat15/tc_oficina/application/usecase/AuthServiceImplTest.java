@@ -37,24 +37,53 @@ class AuthServiceImplTest {
 
     private LoginRequest loginRequest;
 
+    @Test
+    void deveRejeitarLoginSemCpfSemNullPointer() {
+        loginRequest.setCpf(null);
+        when(usuarioRepository.findByUsername(loginRequest.getUsername()))
+                .thenReturn(Optional.of(Usuario.builder().cpf("88417554076").build()));
+        assertThatThrownBy(() -> authService.login(loginRequest))
+                .isInstanceOf(BadCredentialsException.class);
+        verifyNoInteractions(jwtService);
+    }
+
+    @Test
+    void deveRejeitarUsuarioLegadoSemCpfSemNullPointer() {
+        when(usuarioRepository.findByUsername(loginRequest.getUsername()))
+                .thenReturn(Optional.of(Usuario.builder().build()));
+        assertThatThrownBy(() -> authService.login(loginRequest))
+                .isInstanceOf(BadCredentialsException.class);
+        verifyNoInteractions(jwtService);
+    }
+
     @BeforeEach
     void setUp() {
         loginRequest = new LoginRequest();
         loginRequest.setUsername("admin@oficina.com");
+        loginRequest.setCpf("88417554076");
         loginRequest.setPassword("123456");
     }
 
     @Test
     @DisplayName("Deve realizar login com sucesso e retornar token JWT")
     void deveRealizarLoginComSucesso() {
-        when(jwtService.gerarToken("admin@oficina.com")).thenReturn("jwt.token.gerado");
+        String cpf = "88417554076";
+        Usuario usuario = Usuario.builder()
+                .id(1L)
+                .username("admin@oficina.com")
+                .cpf(cpf)
+                .password("hash")
+                .build();
+
+        when(usuarioRepository.findByUsername("admin@oficina.com")).thenReturn(Optional.of(usuario));
+        when(jwtService.gerarToken("admin@oficina.com", cpf)).thenReturn("jwt.token.gerado");
 
         LoginResponse response = authService.login(loginRequest);
 
         assertThat(response.getToken()).isEqualTo("jwt.token.gerado");
         verify(authenticationManager).authenticate(
                 any(UsernamePasswordAuthenticationToken.class));
-        verify(jwtService).gerarToken("admin@oficina.com");
+        verify(jwtService).gerarToken("admin@oficina.com", cpf);
     }
 
     @Test
@@ -66,7 +95,7 @@ class AuthServiceImplTest {
         assertThatThrownBy(() -> authService.login(loginRequest))
                 .isInstanceOf(BadCredentialsException.class);
 
-        verify(jwtService, never()).gerarToken(any());
+        verify(jwtService, never()).gerarToken(any(), any());
     }
 
     @Test

@@ -1,6 +1,7 @@
 package br.com.fiap.soat15.tc_oficina.config;
 
 import br.com.fiap.soat15.tc_oficina.config.security.JwtAuthFilter;
+import br.com.fiap.soat15.tc_oficina.config.security.OrdemAuthorization;
 import br.com.fiap.soat15.tc_oficina.config.security.UsuarioDetailsService;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -26,6 +27,7 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final UsuarioDetailsService usuarioDetailsService;
+    private final OrdemAuthorization ordemAuthorization;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -40,9 +42,10 @@ public class SecurityConfig {
                                 "/v1/api-docs/**",
                                 "/actuator/health",
                                 "/actuator/health/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/ordens/{id}").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/ordens/cliente/{clienteId}").permitAll()
-                        .anyRequest().authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/ordens/cliente/{clienteId}",
+                                "/api/v1/ordens/{id}", "/api/v1/ordens/{id}/status")
+                        .access(ordemAuthorization::autorizar)
+                        .anyRequest().hasRole("ADMIN")
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
