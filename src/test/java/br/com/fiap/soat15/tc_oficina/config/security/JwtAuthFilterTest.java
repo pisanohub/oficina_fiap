@@ -68,6 +68,7 @@ class JwtAuthFilterTest {
     @DisplayName("Deve autenticar quando token é válido")
     void deveAutenticarComTokenValido() throws Exception {
         String token = "token.valido.aqui";
+        String cpf = "88417554076";
         String username = "admin@oficina.com";
         UserDetails userDetails = User.withUsername(username)
                 .password("senha")
@@ -76,8 +77,9 @@ class JwtAuthFilterTest {
 
         when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
         when(jwtService.extrairUsername(token)).thenReturn(username);
+        when(jwtService.extrairCpf(token)).thenReturn(cpf);
         when(usuarioDetailsService.loadUserByUsername(username)).thenReturn(userDetails);
-        when(jwtService.isTokenValido(token, username)).thenReturn(true);
+        when(jwtService.isTokenValido(token, username, cpf)).thenReturn(true);
 
         jwtAuthFilter.doFilterInternal(request, response, filterChain);
 
@@ -90,6 +92,7 @@ class JwtAuthFilterTest {
     @DisplayName("Deve não autenticar quando token é inválido")
     void deveNaoAutenticarComTokenInvalido() throws Exception {
         String token = "token.invalido";
+        String cpf = "88417554076";
         String username = "admin@oficina.com";
         UserDetails userDetails = User.withUsername(username)
                 .password("senha")
@@ -98,8 +101,9 @@ class JwtAuthFilterTest {
 
         when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
         when(jwtService.extrairUsername(token)).thenReturn(username);
+        when(jwtService.extrairCpf(token)).thenReturn(cpf);
         when(usuarioDetailsService.loadUserByUsername(username)).thenReturn(userDetails);
-        when(jwtService.isTokenValido(token, username)).thenReturn(false);
+        when(jwtService.isTokenValido(token, username, cpf)).thenReturn(false);
 
         jwtAuthFilter.doFilterInternal(request, response, filterChain);
 
