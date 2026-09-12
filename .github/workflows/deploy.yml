@@ -167,6 +167,10 @@ jobs:
         run: |
           kubectl apply -f k8s/app-service.yaml
 
+      - name: Criar Ingress
+        run: |
+          kubectl apply -f k8s/app-ingress.yaml
+
       - name: Expor métricas internamente
         run: |
           kubectl apply -f k8s/metrics-service.yaml
@@ -189,7 +193,6 @@ jobs:
             --set global.customSecretLicenseKey=license-key `
             --wait `
             --timeout 10m
-          
       - name: Aguardar rollout
         run: |
           kubectl rollout status deployment/spring-api -n of-fiap

@@ -17,6 +17,8 @@ public interface OrdemDeServicoRepository extends JpaRepository<OrdemDeServico, 
 
     boolean existsByNumero(String numero);
 
+    boolean existsByIdAndVeiculoClienteId(Long id, Long clienteId);
+
     @Query("SELECT os FROM OrdemDeServico os WHERE os.dataInicioExecucao BETWEEN :dataInicial AND :dataFinal AND os.status = :status")
     List<OrdemDeServico> findByDataExecucaoBetweenAndStatusEquals(
             LocalDateTime dataInicial, LocalDateTime dataFinal, StatusOS status);

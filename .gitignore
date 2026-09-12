@@ -37,3 +37,9 @@ build/
 
 # macOS
 .DS_Store
+
+# Assistente de estudo pessoal (não compartilhar com o grupo)
+CLAUDE.md
+.claude/
+documentacao/resumo-live-fase3.md
+documentacao/divisao-tarefas-fase3.md
