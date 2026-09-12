@@ -41,7 +41,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/v1/api-docs/**",
                                 "/actuator/health",
-                                "/actuator/health/**").permitAll()
+                                "/actuator/health/**",
+                                "/actuator/prometheus").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/ordens/cliente/{clienteId}",
                                 "/api/v1/ordens/{id}", "/api/v1/ordens/{id}/status")
                         .access(ordemAuthorization::autorizar)

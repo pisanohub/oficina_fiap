@@ -35,6 +35,9 @@ build/
 # Env vars
 .env
 
+# macOS
+.DS_Store
+
 # Assistente de estudo pessoal (não compartilhar com o grupo)
 CLAUDE.md
 .claude/

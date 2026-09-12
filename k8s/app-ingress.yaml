@@ -13,6 +13,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: of-fiap-app
+                name: spring-api
                 port:
                   number: 8080
