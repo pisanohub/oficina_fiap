@@ -34,3 +34,9 @@ build/
 
 # Env vars
 .env
+
+# Assistente de estudo pessoal (não compartilhar com o grupo)
+CLAUDE.md
+.claude/
+documentacao/resumo-live-fase3.md
+documentacao/divisao-tarefas-fase3.md
