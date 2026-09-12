@@ -1,0 +1,73 @@
+@startuml
+!pragma layout elk
+
+title Oficina FIAP - Diagrama de Componentes UML - Fase 3
+left to right direction
+
+skinparam componentStyle uml2
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName Arial
+skinparam ArrowColor #495057
+skinparam ComponentBorderColor #326CE5
+skinparam ComponentBackgroundColor #E8F0FE
+skinparam InterfaceBorderColor #495057
+skinparam DatabaseBorderColor #6F42C1
+skinparam DatabaseBackgroundColor #EEE8FA
+skinparam CloudBorderColor #1F8F4E
+skinparam CloudBackgroundColor #E9F7EF
+
+actor "Cliente" as Cliente
+
+package "AWS Cloud" {
+    package "Camada serverless" {
+        () "API HTTPS" as IPublica
+        () "JWT" as IJwt
+
+        component "Amazon API Gateway" as Gateway
+        component "Lambda Autenticacao por CPF\n[VPC habilitada]" as LambdaCPF
+        component "Lambda Authorizer" as Authorizer
+        component "Integracao HTTP Proxy" as Proxy
+    }
+
+    package "VPC" {
+        database "RDS PostgreSQL 16" as RDS
+
+        package "EC2 - Kubernetes K3s" {
+            () "Backend HTTP" as IBackend
+            component "Spring API\nREST, JWT, dominio, JPA,\nOpenTelemetry, Actuator e logs JSON" as SpringAPI
+            component "nri-bundle" as NriBundle
+        }
+    }
+}
+
+cloud "New Relic" as NewRelic
+() "Telemetria" as ITelemetria
+
+Cliente ..> IPublica : POST /auth/cpf\n/api/{proxy+} com Bearer JWT
+IPublica -- Gateway
+
+Gateway ..> LambdaCPF : invoca
+LambdaCPF ..> RDS : consulta cliente via JDBC
+
+Gateway ..> IJwt : solicita autorizacao
+IJwt -- Authorizer
+Gateway ..> Proxy : encaminha requisicao autorizada
+Proxy ..> IBackend : usa APP_BASE_URL\n[exposicao a confirmar]
+IBackend -- SpringAPI
+
+SpringAPI ..> RDS : acessa via JDBC
+
+NriBundle ..> SpringAPI : coleta Prometheus e logs
+SpringAPI ..> ITelemetria : exporta traces OTLP
+NriBundle ..> ITelemetria : exporta metricas, eventos e logs
+ITelemetria -- NewRelic
+
+legend left
+  |= Notacao |= Significado |
+  | ( ) | Interface oferecida |
+  | Linha continua | Componente oferece a interface ou fluxo interno |
+  | Seta tracejada | Dependencia: um componente utiliza outro |
+endlegend
+
+@enduml

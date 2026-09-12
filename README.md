@@ -42,6 +42,13 @@ ABERTA → EM_DIAGNOSTICO → AGUARDANDO_APROVACAO → APROVADA → EM_EXECUCAO 
 
 ## 🏗️ Arquitetura
 
+A arquitetura da Fase 3 está documentada em duas visões complementares:
+
+- [Diagrama de Componentes UML](documentacao/diagrama-componentes-uml.md): componentes, interfaces oferecidas e dependências;
+- [Visão arquitetural, implantação e CI/CD](documentacao/arquitetura-implantacao-cicd-fase3.md): AWS, Kubernetes, RDS, pipelines e New Relic.
+
+As decisões técnicas e arquiteturais estão reunidas no [índice consolidado de RFCs e ADRs](documentacao/decisoes/README.md).
+
 Monolito em camadas seguindo princípios de **Domain-Driven Design (DDD)**:
 
 ```
@@ -215,5 +222,4 @@ docker-compose up --build
 ## 👥 Grupo
 
 SOAT15 — Pós-graduação em Arquitetura de Software · FIAP · Fase 1
-
 
