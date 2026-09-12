@@ -131,7 +131,11 @@ jobs:
       - name: Expor aplicação
         run: |
           kubectl apply -f k8s/app-service.yaml
-          
+
+      - name: Criar Ingress
+        run: |
+          kubectl apply -f k8s/app-ingress.yaml
+
       - name: Aguardar rollout
         run: |
           kubectl rollout status deployment/spring-api -n of-fiap
