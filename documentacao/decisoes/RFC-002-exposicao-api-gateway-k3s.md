@@ -1,18 +1,19 @@
 # RFC-002 - Exposição da Spring API para o API Gateway
 
-- **Estado:** Em discussão
+- **Estado:** Aprovada e implementada
 - **Data da consolidação:** 8 de setembro de 2026
+- **Última revisão:** 12 de setembro de 2026
 - **Escopo:** `oficina-fiap-infra-k8s`, `oficina-fiap-lambda-auth` e `oficina_fiap`
 
 ## Contexto
 
 O Amazon API Gateway usa uma integração `HTTP_PROXY` e encaminha `/api/{proxy+}` para `${APP_BASE_URL}/api/{proxy}`.
 
-A Spring API é executada em K3s e seu Service Kubernetes é do tipo `ClusterIP`. Esse tipo de Service é acessível somente dentro do cluster. O Security Group da EC2 permite tráfego HTTP público na porta 80, porém não há um manifesto de Ingress confirmado no repositório.
+A Spring API é executada em K3s e seu Service Kubernetes é do tipo `ClusterIP`. O acesso externo é fornecido por um manifesto de Ingress que utiliza o Traefik do K3s na porta 80 da instância EC2.
 
 Sem um endpoint acessível pela AWS, o API Gateway não consegue encaminhar as requisições autorizadas para a aplicação.
 
-## Proposta recomendada para o ambiente educacional
+## Solução adotada para o ambiente educacional
 
 Usar o Traefik incluído no K3s como Ingress Controller:
 
@@ -24,7 +25,7 @@ API Gateway
     -> Pods da Spring API
 ```
 
-O manifesto de Ingress deve encaminhar o prefixo `/api` para o Service correto. `APP_BASE_URL` deve receber a URL base, sem `/api` ao final.
+O manifesto de Ingress encaminha o prefixo `/api` para o Service `spring-api`. `APP_BASE_URL` recebe a URL base, sem `/api` ao final.
 
 Enquanto o endereço da EC2 permanecer público, a Spring API deve continuar validando o JWT para impedir que alguém contorne o API Gateway.
 
@@ -70,10 +71,14 @@ kubectl get service,endpoints -n of-fiap
 
 Fora do cluster, a URL pública deve responder. Em uma rota protegida, receber HTTP 401 ou 403 sem token comprova conectividade; timeout ou conexão recusada indica falha de exposição.
 
-Depois disso:
+O teste ponta a ponta executado foi:
 
 1. configurar `APP_BASE_URL` no repositório da Lambda;
 2. implantar API Gateway e Lambdas;
 3. obter o JWT com CPF;
 4. chamar uma rota protegida pela URL do Gateway;
 5. confirmar que a resposta veio da Spring API.
+
+## Resultado da implementação
+
+O Ingress Traefik foi implantado e a Spring API tornou-se acessível ao HTTP Proxy do API Gateway. O fluxo protegido foi validado de ponta a ponta. Como o ambiente do AWS Academy é recriado para controlar custos, o IP público não é tratado como endereço permanente e `APP_BASE_URL` precisa ser atualizado após uma recriação da infraestrutura.

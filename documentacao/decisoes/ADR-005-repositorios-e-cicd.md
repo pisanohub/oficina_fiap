@@ -1,7 +1,8 @@
 # ADR-005 - Separar a solução em quatro repositórios e pipelines
 
-- **Estado:** Aceita; deploy serverless aguarda habilitação
+- **Estado:** Aceita e implementada
 - **Data da consolidação:** 8 de setembro de 2026
+- **Última revisão:** 12 de setembro de 2026
 - **Escopo:** solução completa
 
 ## Contexto
@@ -56,3 +57,7 @@ Simplificaria a ordem de execução, mas daria a um único workflow acesso a tod
 - secrets e variables do GitHub para credenciais e endpoints;
 - concorrência controlada no deploy serverless;
 - deploy da Lambda condicionado a `DEPLOY_ENABLED=true`.
+
+## Resultado da implementação
+
+Os quatro repositórios e seus pipelines foram utilizados de forma independente. A aplicação principal foi publicada e implantada no K3s, o RDS PostgreSQL foi disponibilizado, e o deploy serverless foi habilitado com as variáveis e secrets necessários. A Lambda de autenticação, o Lambda Authorizer e o API Gateway foram implantados e validados em um fluxo ponta a ponta até a Spring API.

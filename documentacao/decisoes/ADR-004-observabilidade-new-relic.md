@@ -1,7 +1,8 @@
 # ADR-004 - Adotar New Relic com OpenTelemetry e nri-bundle
 
-- **Estado:** Aceita; integração aguarda incorporação definitiva à `main`
+- **Estado:** Aceita, implementada e validada na `main`
 - **Data da consolidação:** 8 de setembro de 2026
+- **Última revisão:** 12 de setembro de 2026
 - **Repositório principal:** `oficina_fiap`
 
 ## Contexto
@@ -59,7 +60,10 @@ Atenderia aos requisitos, mas a equipe já validou ingestão e dashboards no New
 - pods do `nri-bundle` executados no namespace `newrelic`;
 - métricas de CPU e memória do Kubernetes no dashboard;
 - logs com campos de cluster, namespace, container, pod, serviço e correlação;
-- condição e workflow de alerta configurados.
+- coleta Prometheus validada nos dois pods da Spring API;
+- métricas de volume de ordens, transições e duração por status validadas com fluxos reais;
+- dashboard com volume diário, tempo médio por status, erros HTTP, latência e recursos do Kubernetes;
+- condição de alerta configurada, habilitada e disparada em teste controlado.
 
 ## Evidências de implementação
 
@@ -69,3 +73,7 @@ Atenderia aos requisitos, mas a equipe já validou ingestão e dashboards no New
 - Services de aplicação e métricas;
 - `k8s/newrelic-values.yaml`;
 - instalação do `nri-bundle` por Helm no workflow de deploy.
+
+## Resultado da implementação
+
+A integração foi incorporada à branch `main` e implantada pelo pipeline da aplicação. O `nri-prometheus` foi configurado com `scrape_endpoints: true` e `scrape_services: false`, permitindo coletar separadamente as duas réplicas da Spring API. O fluxo de criação e avanço de uma ordem de serviço foi executado para validar as métricas de negócio, e um erro HTTP controlado foi usado para validar a abertura de alerta no New Relic.
