@@ -254,3 +254,5 @@ Endpoints de gerenciamento ficam na porta `8081`: `/actuator/health`, `/actuator
 ## 👥 Grupo
 
 SOAT15 — Pós-graduação em Arquitetura de Software · FIAP · Fase 1
+
+<!-- Demonstração da pipeline para o vídeo da Fase 3 -->
