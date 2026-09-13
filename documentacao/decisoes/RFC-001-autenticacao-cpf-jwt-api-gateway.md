@@ -1,7 +1,8 @@
 # RFC-001 - Autenticação por CPF, JWT e API Gateway
 
-- **Estado:** Em discussão
+- **Estado:** Aprovada e implementada
 - **Data da consolidação:** 8 de setembro de 2026
+- **Última revisão:** 12 de setembro de 2026
 - **Escopo:** `oficina-fiap-lambda-auth` e `oficina_fiap`
 
 ## Contexto
@@ -42,23 +43,23 @@ Adotar o seguinte fluxo:
 
 Validade inicial proposta: **3.600 segundos**.
 
-Tokens administrativos existentes devem ser diferenciados por uma claim explícita, por exemplo `tipo=ADMIN`, ou permanecer em um fluxo de autenticação separado. A equipe deve decidir quais rotas aceitam `CLIENTE`, `ADMIN` ou ambos.
+Os tokens de cliente e de administrador permanecem em fluxos separados. O token de cliente contém `tipo=CLIENTE` e permite consultar somente os recursos autorizados para o próprio cliente, enquanto as operações administrativas continuam exigindo a autenticação administrativa da Spring API.
 
 ## Segredo de assinatura
 
 A Lambda emissora, o Lambda Authorizer e a Spring API precisam usar exatamente a mesma chave de assinatura.
 
-O Terraform da Lambda atualmente cria `random_password.jwt`, enquanto a aplicação recebe `JWT_SECRET` pelo GitHub Actions. Esses valores independentes não funcionam juntos. A proposta é transformar o segredo em entrada sensível do Terraform e fornecer o mesmo valor nos dois pipelines, sem registrá-lo no código, nos logs ou neste documento.
+O segredo deixou de ser gerado de forma independente no deploy da Lambda. O mesmo `JWT_SECRET` passou a ser fornecido à Lambda emissora, ao Lambda Authorizer e à Spring API por secrets dos respectivos repositórios, sem registrá-lo no código, nos logs ou neste documento.
 
 Como os secrets do GitHub são isolados por repositório, o mesmo valor precisa ser cadastrado separadamente nos repositórios envolvidos, ou disponibilizado por um gerenciador de segredos comum.
 
-## Incompatibilidade encontrada
+## Compatibilidade implementada
 
-A implementação atual da Lambda usa `sub=CPF` e as claims `clienteId`, `tipo` e `ativo`.
+Durante a consolidação inicial, foi identificada uma incompatibilidade: a Lambda emitia `sub=CPF` e as claims `clienteId`, `tipo` e `ativo`, enquanto a aplicação principal reconhecia apenas o contrato administrativo baseado em `username`.
 
-A branch `feature/atualizacao-jwt` da aplicação usa `sub=username`, adiciona `cpf` e carrega `UsuarioDetails` pelo nome do usuário. Portanto, apenas realizar o merge dessa branch e igualar o `JWT_SECRET` não torna os tokens compatíveis.
+A aplicação foi ajustada para reconhecer explicitamente o contrato de cliente sem tentar carregar o CPF como usuário administrativo. A validação confere assinatura, expiração, tipo do principal, identificador e situação do cliente, mantendo separado o contrato de autenticação administrativa.
 
-Antes do teste ponta a ponta, a aplicação precisa reconhecer o contrato de token de cliente definido nesta RFC, sem exigir que o CPF seja um usuário administrativo.
+Com o `JWT_SECRET` compartilhado, o token emitido pela Lambda passou a ser aceito pelo Authorizer e pela Spring API.
 
 ## Alternativas consideradas
 
@@ -98,3 +99,7 @@ Evita alterações imediatas, mas aumenta ambiguidades e falhas de autorização
 - a Spring API aceita o token emitido pela Lambda;
 - uma rota protegida rejeita chamadas sem token;
 - o fluxo completo é testado usando a URL do API Gateway.
+
+## Resultado da implementação
+
+Os critérios de aceite foram validados no ambiente AWS. Um cliente ativo foi autenticado pelo CPF no endpoint público, recebeu um JWT de uma hora e utilizou o token em uma rota protegida. A requisição passou pelo Lambda Authorizer, foi encaminhada pelo API Gateway e chegou à Spring API, que aplicou as permissões do cliente.
