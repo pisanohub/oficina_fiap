@@ -157,4 +157,6 @@ flowchart LR
 
 ## Observação sobre a exposição da aplicação
 
-O API Gateway exige uma `APP_BASE_URL` alcançável pela AWS. O manifesto atual cria o serviço `spring-api` como `ClusterIP`, que é acessível apenas dentro do cluster. A estratégia definitiva de exposição HTTP — como Ingress, LoadBalancer, NodePort com proxy na porta 80 ou outra alternativa — precisa ser confirmada pelo responsável pela infraestrutura antes da entrega. A ligação entre o API Gateway e o endpoint aparece no diagrama como arquitetura-alvo.
+O serviço `spring-api` permanece como `ClusterIP`, portanto seu acesso direto fica restrito ao cluster. A exposição externa é feita pelo recurso `spring-api-ingress`, processado pelo Traefik instalado no K3s. O Ingress recebe as requisições HTTP na porta 80 e as encaminha ao serviço `spring-api` na porta 8080.
+
+O endereço público do nó é utilizado como `APP_BASE_URL` pela integração do API Gateway com a aplicação. Como esse endereço pode mudar quando a infraestrutura do laboratório AWS é recriada, ele deve ser confirmado e atualizado no deploy da Lambda antes de cada validação ponta a ponta. Essa estratégia foi implantada e validada no fluxo real de autenticação e acesso às rotas protegidas.
