@@ -44,10 +44,10 @@
 
 ### 3. DynamoDB — Execução Service (ADR-P2)
 
-- [ ] Confirmar com o Guilherme o nome/formato da chave primária antes de criar.
-- [ ] Criar a tabela via Terraform.
-- [ ] Confirmar que a `LabRole` tem permissão de leitura/escrita (plano de verificação do ADR-P2).
-- [ ] Guardar nome da tabela/região como Secret no repositório do Execução Service.
+- [x] Confirmado com o Guilherme: `pk` = id da OS (String), `sk` = tipo do dado daquela OS (String) — resposta em 02/11/2026.
+- [x] Tabela `execucao_service` criada via Terraform, dentro do próprio repositório do Execução Service (`terraform/`, seguindo o padrão do `oficina-fiap-lambda-auth` — CI só valida, apply é manual/local, já que a definição não deve mudar com frequência). Chave conferida contra o código real (`DynamoExecucaoRepository`/`DynamoOutboxRepository`, já mergeados) — bate certinho, sem precisar de índice secundário.
+- [ ] Confirmar que a `LabRole` tem permissão de leitura/escrita na prática (plano de verificação do ADR-P2) — só dá pra testar de verdade quando o Execução Service estiver rodando no cluster e exercitando o DynamoDB.
+- [x] Nome da tabela e região já vêm como padrão no `ConfigMap` do pipeline de deploy (`execucao_service` / `us-east-1`), não precisou de Secret separado.
 
 ### 4. ~~Pipeline de deploy nos 3 repositórios novos~~ ✅ concluído (02/11/2026)
 
