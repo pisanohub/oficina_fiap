@@ -36,9 +36,10 @@
   - `orcamento-respondido` (Billing → OS)
   - `processar-pagamento` (OS → Billing)
   - `pagamento-confirmado` (Billing → OS)
-  - `enviar-execucao` (OS → Execução)
-  - `execucao-concluida` (Execução → OS)
+  - `execucao-comandos` (OS → Execução) — renomeada de `enviar-execucao` em 03/11/2026, pra bater com o código real do Execução Service (ver abaixo)
+  - `execucao-resultados` (Execução → OS) — renomeada de `execucao-concluida` em 03/11/2026
   - URLs completas no output `sqs_queue_urls` do Terraform (formato `https://sqs.us-east-1.amazonaws.com/381492182695/<nome-da-fila>`).
+- [x] **Renomeação das filas do Execução (03/11/2026):** o Guilherme avisou que o código já mergeado usava nomes diferentes do event storming original (`execucao-comandos`/`execucao-resultados`, não `enviar-execucao`/`execucao-concluida`) — PR #9, merge e apply em 03/11/2026. `event-storming-saga-v1.md`, `ADR-P4` e o card visual da saga também atualizados.
 - [ ] Confirmar que a `LabRole` da EC2 consegue publicar/consumir nas filas (plano de verificação do ADR-P3) — só dá pra testar de verdade quando tiver algum serviço rodando no cluster.
 - [ ] Guardar as URLs das filas como Secrets nos repositórios dos serviços correspondentes — depende dos repositórios dos serviços terem código pra consumir (ainda são só esqueletos).
 
