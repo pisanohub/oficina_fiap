@@ -34,8 +34,8 @@ O preço de cada `Servico`/`ItemEstoque` é capturado pelo OS Service no momento
 | `orcamento-respondido` | Billing → OS | evento `OrcamentoGerado` |
 | `processar-pagamento` | OS → Billing | comando `ProcessarPagamento` |
 | `pagamento-confirmado` | Billing → OS | evento `PagamentoConfirmado` |
-| `enviar-execucao` | OS → Execução | comando `EnviarParaExecucao` |
-| `execucao-concluida` | Execução → OS | evento `ExecucaoConcluida` |
+| `execucao-comandos` | OS → Execução | comando `EnviarParaExecucao` |
+| `execucao-resultados` | Execução → OS | evento `ExecucaoConcluida` |
 
 ## Alternativas consideradas
 

@@ -23,9 +23,9 @@ Rascunho inicial pra refinar com o grupo (item da Semana 0 do `divisao-tarefas-f
 | 3 | `SolicitarOrcamento` (ator: Mecânico/Operador) | `OrdemDeServico` / OS Service | `DiagnosticoConcluido` | Quando `DiagnosticoConcluido` → disparar `GerarOrcamento` (fila `gerar-orcamento`) |
 | 4 | `GerarOrcamento` | `Orcamento` / Billing Service | `OrcamentoGerado` | Quando `OrcamentoGerado` → OS Service publica na fila `orcamento-respondido`; status da OS vira `AGUARDANDO_APROVACAO` |
 | 5 | `AprovarOrcamento` (ator: Cliente) | `OrdemDeServico` / OS Service | `OrcamentoAprovado` | Quando `OrcamentoAprovado` → disparar `ProcessarPagamento` (fila `processar-pagamento`) |
-| 6 | `ProcessarPagamento` | `Pagamento` / Billing Service (🟥 integra com Mercado Pago) | `PagamentoConfirmado` | Quando `PagamentoConfirmado` → OS Service consome a fila `pagamento-confirmado`; disparar `EnviarParaExecucao` (fila `enviar-execucao`) |
+| 6 | `ProcessarPagamento` | `Pagamento` / Billing Service (🟥 integra com Mercado Pago) | `PagamentoConfirmado` | Quando `PagamentoConfirmado` → OS Service consome a fila `pagamento-confirmado`; disparar `EnviarParaExecucao` (fila `execucao-comandos`) |
 | 7 | `EnviarParaExecucao` | `Execucao` / Execução Service | `ExecucaoIniciada` | — |
-| 8 | `ConcluirExecucao` | `Execucao` / Execução Service | `ExecucaoConcluida` | Quando `ExecucaoConcluida` → OS Service publica na fila `execucao-concluida`; status da OS vira `CONCLUIDA` |
+| 8 | `ConcluirExecucao` | `Execucao` / Execução Service | `ExecucaoConcluida` | Quando `ExecucaoConcluida` → OS Service publica na fila `execucao-resultados`; status da OS vira `CONCLUIDA` |
 | 9 | *(implícito — entrega física)* | `OrdemDeServico` / OS Service | `OrdemDeServicoEntregue` | Fim do fluxo feliz |
 
 ## Linha do tempo — compensações (caminhos de falha)
@@ -70,10 +70,10 @@ sequenceDiagram
     Billing-->>Billing: PagamentoConfirmado
     Billing->>OS: evento PagamentoConfirmado (fila pagamento-confirmado)
 
-    OS->>Exec: comando EnviarParaExecucao (fila)
+    OS->>Exec: comando EnviarParaExecucao (fila execucao-comandos)
     Exec-->>Exec: ExecucaoIniciada
     Exec-->>Exec: ExecucaoConcluida
-    Exec->>OS: evento ExecucaoConcluida (fila)
+    Exec->>OS: evento ExecucaoConcluida (fila execucao-resultados)
     OS-->>OS: status = CONCLUIDA
 ```
 
