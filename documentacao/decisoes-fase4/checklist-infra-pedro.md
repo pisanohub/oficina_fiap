@@ -2,7 +2,7 @@
 
 > Documento de trabalho pessoal, pra retomar rápido. Não é o planejamento oficial do grupo (esse continua em `divisao-tarefas-fase4.md`) — é só o detalhamento técnico da minha parte.
 >
-> Última atualização: 02/11/2026.
+> Última atualização: 09/11/2026.
 
 ## ✅ Já feito
 
@@ -40,14 +40,14 @@
   - `execucao-resultados` (Execução → OS) — renomeada de `execucao-concluida` em 03/11/2026
   - URLs completas no output `sqs_queue_urls` do Terraform (formato `https://sqs.us-east-1.amazonaws.com/381492182695/<nome-da-fila>`).
 - [x] **Renomeação das filas do Execução (03/11/2026):** o Guilherme avisou que o código já mergeado usava nomes diferentes do event storming original (`execucao-comandos`/`execucao-resultados`, não `enviar-execucao`/`execucao-concluida`) — PR #9, merge e apply em 03/11/2026. `event-storming-saga-v1.md`, `ADR-P4` e o card visual da saga também atualizados.
-- [ ] Confirmar que a `LabRole` da EC2 consegue publicar/consumir nas filas (plano de verificação do ADR-P3) — só dá pra testar de verdade quando tiver algum serviço rodando no cluster.
-- [ ] Guardar as URLs das filas como Secrets nos repositórios dos serviços correspondentes — depende dos repositórios dos serviços terem código pra consumir (ainda são só esqueletos).
+- [x] Guardar as URLs das filas como Secrets nos repositórios dos serviços correspondentes — feito pelo Guilherme no PR #27 do Execução Service (`SQS_EXECUCAO_COMANDOS_URL`/`SQS_EXECUCAO_RESULTADOS_URL`, com `SQS_BASE_URL` como variável de repositório e fallback padrão).
+- [x] Confirmado que a `LabRole` consegue publicar/consumir nas filas (plano de verificação do ADR-P3) — 09/11/2026: `SQS_CONSUMER_ENABLED`/`OUTBOX_PUBLISHER_ENABLED`/`SQS_METRICS_ENABLED` já ligados em produção (PR #27); pod do Execução Service rodando há 5h+ sem nenhum `AccessDenied`/exceção não tratada nos logs (`receiveMessage` e `getQueueAttributes` não têm try/catch ao redor — qualquer falha de permissão apareceria como erro, e não apareceu).
 
 ### 3. DynamoDB — Execução Service (ADR-P2)
 
 - [x] Confirmado com o Guilherme: `pk` = id da OS (String), `sk` = tipo do dado daquela OS (String) — resposta em 02/11/2026.
 - [x] Tabela `execucao_service` criada via Terraform, dentro do próprio repositório do Execução Service (`terraform/`, seguindo o padrão do `oficina-fiap-lambda-auth` — CI só valida, apply é manual/local, já que a definição não deve mudar com frequência). Chave conferida contra o código real (`DynamoExecucaoRepository`/`DynamoOutboxRepository`, já mergeados) — bate certinho, sem precisar de índice secundário.
-- [ ] Confirmar que a `LabRole` tem permissão de leitura/escrita na prática (plano de verificação do ADR-P2) — só dá pra testar de verdade quando o Execução Service estiver rodando no cluster e exercitando o DynamoDB.
+- [x] Confirmado que a `LabRole` tem permissão de leitura/escrita na prática (plano de verificação do ADR-P2) — 09/11/2026: a consulta da outbox ao DynamoDB roda a cada 5s (sem try/catch ao redor) desde que o PR #27 foi deployado, sem erro nos logs.
 - [x] Nome da tabela e região já vêm como padrão no `ConfigMap` do pipeline de deploy (`execucao_service` / `us-east-1`), não precisou de Secret separado.
 
 ### 4. ~~Pipeline de deploy nos 3 repositórios novos~~ ✅ concluído (02/11/2026)
