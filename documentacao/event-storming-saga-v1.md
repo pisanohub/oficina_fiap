@@ -24,9 +24,9 @@ Rascunho inicial pra refinar com o grupo (item da Semana 0 do `divisao-tarefas-f
 | 4 | `GerarOrcamento` | `Orcamento` / Billing Service | `OrcamentoGerado` | Quando `OrcamentoGerado` → OS Service publica na fila `orcamento-respondido`; status da OS vira `AGUARDANDO_APROVACAO` |
 | 5 | `AprovarOrcamento` (ator: Cliente) | `OrdemDeServico` / OS Service | `OrcamentoAprovado` | Quando `OrcamentoAprovado` → disparar `ProcessarPagamento` (fila `processar-pagamento`) |
 | 6 | `ProcessarPagamento` | `Pagamento` / Billing Service (🟥 integra com Mercado Pago) | `PagamentoConfirmado` | Quando `PagamentoConfirmado` → OS Service consome a fila `pagamento-confirmado`; disparar `EnviarParaExecucao` (fila `execucao-comandos`) |
-| 7 | `EnviarParaExecucao` | `Execucao` / Execução Service | `ExecucaoIniciada` | — |
+| 7 | `EnviarParaExecucao` | `Execucao` / Execução Service | `ExecucaoIniciada` | Status da OS vira `EM_EXECUCAO` **imediatamente ao disparar** o comando — não espera confirmação. `ExecucaoIniciada` é só interno do Execução Service, nunca é publicado de volta pro OS (decisão confirmada em 07/11/2026, ver hot spot #6) |
 | 8 | `ConcluirExecucao` | `Execucao` / Execução Service | `ExecucaoConcluida` | Quando `ExecucaoConcluida` → OS Service publica na fila `execucao-resultados`; status da OS vira `CONCLUIDA` |
-| 9 | *(implícito — entrega física)* | `OrdemDeServico` / OS Service | `OrdemDeServicoEntregue` | Fim do fluxo feliz |
+| 9 | `ConfirmarEntrega` (ator: Mecânico/Operador) | `OrdemDeServico` / OS Service | `OrdemDeServicoEntregue` | Status vira `ENTREGUE` — **ação explícita**, não dá pra automatizar: representa a entrega física do veículo ao cliente, um evento do mundo real que nenhuma fila consegue detectar sozinha (resolvido em 07/11/2026, ver hot spot #6). Fim do fluxo feliz |
 
 ## Linha do tempo — compensações (caminhos de falha)
 
@@ -71,10 +71,14 @@ sequenceDiagram
     Billing->>OS: evento PagamentoConfirmado (fila pagamento-confirmado)
 
     OS->>Exec: comando EnviarParaExecucao (fila execucao-comandos)
-    Exec-->>Exec: ExecucaoIniciada
+    OS-->>OS: status = EM_EXECUCAO
+    Exec-->>Exec: ExecucaoIniciada (interno, nao volta pro OS)
     Exec-->>Exec: ExecucaoConcluida
     Exec->>OS: evento ExecucaoConcluida (fila execucao-resultados)
     OS-->>OS: status = CONCLUIDA
+
+    Operador->>OS: ConfirmarEntrega
+    OS-->>OS: status = ENTREGUE
 ```
 
 ## Hot spots — perguntas em aberto pro grupo
@@ -84,3 +88,6 @@ sequenceDiagram
 3. **Onde mora o estado da Saga:** um campo de status na própria `OrdemDeServico`, ou uma tabela separada dedicada a acompanhar "em que passo está essa Saga" (mais rastreável, mas mais uma tabela pra manter)?
 4. **Timeout de aprovação:** o que acontece se o cliente nunca aprovar/reprovar o orçamento? Precisa de um evento de expiração?
 5. **Como o cliente sabe que o orçamento está pronto pra aprovar:** hoje não existe nenhum mecanismo de notificação — a aplicação sempre funcionou por consulta (`GET /api/v1/ordens/cliente/{clienteId}`). Mantemos assim (cliente consulta quando quiser) ou adicionamos alguma notificação ativa (e-mail/push)? Não é exigido pelo enunciado da Fase 4, então é uma decisão de escopo, não só técnica.
+6. ~~**Gatilho de `EM_EXECUCAO` e do status `ENTREGUE`**~~ — **RESOLVIDO (07/11/2026)**, dúvidas do Gabriel Souza:
+   - `EM_EXECUCAO`: a OS muda pra esse status **imediatamente ao disparar** o comando `EnviarParaExecucao`, sem esperar confirmação — `ExecucaoIniciada` nunca foi desenhado pra voltar pro OS (é interno do Execução Service). Considerado criar um `AGUARDANDO_EXECUCAO` intermediário (simétrico ao `AGUARDANDO_APROVACAO`), mas descartado por ora: a DLQ já cobre falha de entrega de mensagem, e a granularidade extra não compensa o trabalho em dois serviços a essa altura do projeto.
+   - `ENTREGUE`: diferente dos outros status, **não dá pra automatizar por fila** — representa a entrega física do veículo, um evento do mundo real. Precisa de um endpoint explícito (`ConfirmarEntrega`), chamado manualmente pelo operador quando o cliente retira o veículo.
