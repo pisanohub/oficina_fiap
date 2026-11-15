@@ -1,7 +1,7 @@
 # ADR-P5 — Upgrade de capacidade do cluster Kubernetes (t3.medium → t3.large)
 
-- **Estado:** Aceita, implementação pendente
-- **Data:** 17/10/2026
+- **Estado:** Aceita e implementada
+- **Data:** 17/10/2026 (implementada desde a Semana 1; Elastic IP fixo adicionado em `eip.tf`, PR #8)
 - **Repositório principal:** `oficina-fiap-infra-k8s`
 
 ## Contexto
@@ -40,5 +40,5 @@ Mesmo motivo já registrado no ADR-001 da Fase 3: custo e complexidade despropor
 
 ## Plano de verificação
 
-- Tentar provisionar uma instância `t3.large` via Terraform logo na Semana 0, antes de depender dela pro restante do cronograma.
-- Se não for permitida pela conta do Academy, este ADR precisa ser revisado com uma alternativa (ex.: reduzir réplicas por serviço, ou tentar outro tipo de instância intermediário).
+- [x] **`t3.large` provisionada com sucesso** desde a Semana 1 — a conta do Academy Lab permite o tipo de instância, sem precisar de alternativa.
+- [x] **Resiliência entre sessões confirmada na prática:** a EC2 já foi recriada do zero várias vezes via `terraform apply` (a cada sessão nova do Lab) sem nenhum problema de capacidade, e o Elastic IP (`eip.tf`) manteve o IP fixo em todas as recriações.

@@ -1,7 +1,7 @@
 # ADR-P2 — Banco de dados próprio por microsserviço (RDS compartilhado + DynamoDB)
 
-- **Estado:** Aceita, implementação pendente
-- **Data:** 17/10/2026
+- **Estado:** Aceita e implementada
+- **Data:** 17/10/2026 (plano de verificação concluído em 15/11/2026)
 - **Repositórios principais:** `oficina-fiap-infra-database` (RDS); repositório do Execução e Produção Service (DynamoDB)
 
 ## Contexto
@@ -43,5 +43,5 @@ Mais simples, mas não atende ao requisito obrigatório de ter pelo menos um ban
 
 ## Plano de verificação
 
-- Confirmar, com um teste simples, que a credencial de cada serviço só autentica no próprio database (uma tentativa de acesso cruzado deve falhar).
-- Confirmar que a `LabRole` da instância EC2 tem permissão de leitura/escrita no DynamoDB antes de iniciar a implementação do Execução Service.
+- [x] **Isolamento entre databases confirmado (02/11/2026):** usuário do `os_service` recebeu erro de permissão negada ao tentar acessar `billing_service` — acesso cruzado realmente falha.
+- [x] **Permissão da `LabRole` no DynamoDB confirmada (09/11/2026, reconfirmada em 15/11/2026 após recriação completa do cluster):** a consulta da outbox do Execução Service ao DynamoDB roda a cada 5 s, sem try/catch ao redor da chamada — qualquer `AccessDenied` apareceria como erro não tratado nos logs, e não apareceu em nenhuma das duas verificações (antes e depois de recriar a EC2 do zero via Terraform).

@@ -11,10 +11,10 @@ Visão geral da solução: [diagrama geral da arquitetura](../arquitetura-geral-
 | ADR | Assunto | Autor responsável | Estado |
 | --- | --- | --- | --- |
 | [ADR-P1](ADR-P1-tres-microsservicos.md) | Divisão em três microsserviços (OS, Billing, Execução) | Grupo (consolidado pelo Guilherme) | Aceita e implementada |
-| [ADR-P2](ADR-P2-bancos-de-dados.md) | Banco próprio por serviço: RDS PostgreSQL compartilhado (OS e Billing) e DynamoDB (Execução) | Pedro | Aceita; RDS e tabela DynamoDB criados |
-| [ADR-P3](ADR-P3-mensageria-sqs.md) | Mensageria com Amazon SQS, DLQ e consumidores idempotentes | Pedro | Aceita; 6 filas e 6 DLQs criadas |
+| [ADR-P2](ADR-P2-bancos-de-dados.md) | Banco próprio por serviço: RDS PostgreSQL compartilhado (OS e Billing) e DynamoDB (Execução) | Pedro | Aceita e implementada (plano de verificação fechado) |
+| [ADR-P3](ADR-P3-mensageria-sqs.md) | Mensageria com Amazon SQS, DLQ e consumidores idempotentes | Pedro | Aceita e implementada (plano de verificação fechado) |
 | [ADR-P4](ADR-P4-saga-orquestrada.md) | Saga orquestrada dentro do OS Service | Gabriel Souza | Proposta, em validação pelo autor |
-| [ADR-P5](ADR-P5-capacidade-cluster.md) | Capacidade do cluster: EC2 `t3.large` | Pedro | Aceita e implementada |
+| [ADR-P5](ADR-P5-capacidade-cluster.md) | Capacidade do cluster: EC2 `t3.large` | Pedro | Aceita e implementada (plano de verificação fechado) |
 | [ADR-P6](ADR-P6-continuidade-fases-anteriores.md) | Continuidade das decisões das fases anteriores | Grupo (consolidado pelo Guilherme) | Aceita, implementação parcial |
 | [ADR-P7](ADR-P7-reforcos-das-aulas.md) | Isolamento na Saga (Billing) e Circuit Breaker nas chamadas síncronas | Grupo (consolidado pelo Guilherme) | Aceita, implementação parcial |
 
@@ -59,8 +59,7 @@ Os ADRs de cada autor seguem como foram escritos. Abaixo, o que já foi verifica
 | Item | Responsável |
 | --- | --- |
 | Validar e assumir o ADR-P4 (está como proposta) | Gabriel Souza |
-| Preencher o "Plano de verificação" do P2 e do P3 com o teste real da `LabRole` | Pedro |
-| Marcar o ADR-P5 como implementado | Pedro |
 | Confirmar o Circuit Breaker nas chamadas ao Mercado Pago (P7) | Gabriel Ramos |
 | Definir rotas do API Gateway para os serviços novos e autenticação entre serviços (P6) | Gabriel Ramos, Pedro e Guilherme |
-| Branch protection com `build-test` obrigatório nos três repositórios (P6) | Pedro |
+
+**Concluído em 15/11/2026:** plano de verificação do P2 e do P3 preenchido com o teste real da `LabRole` (reconfirmado após recriar o cluster do zero), ADR-P5 marcado como implementado, e branch protection com `build-test` obrigatório já confirmada nos três repositórios de serviço.
