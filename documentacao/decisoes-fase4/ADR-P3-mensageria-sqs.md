@@ -1,8 +1,8 @@
 # ADR-P3 — Mensageria assíncrona com Amazon SQS
 
-- **Estado:** Aceita, implementação pendente
-- **Data:** 17/10/2026
-- **Repositório principal:** `oficina-fiap-infra-k8s` (local de provisionamento a confirmar quando a infra de mensageria for criada)
+- **Estado:** Aceita e implementada
+- **Data:** 17/10/2026 (plano de verificação concluído em 15/11/2026)
+- **Repositório principal:** `oficina-fiap-infra-k8s` (`sqs.tf`, aplicado em 02/11/2026)
 
 ## Contexto
 
@@ -47,5 +47,5 @@ O conteúdo de aula da Fase 4 (SAGA na prática) cita explicitamente o Amazon SQ
 
 ## Plano de verificação
 
-- Confirmar que a `LabRole` permite criar e consumir filas SQS.
-- Implementar um teste simulando mensagem duplicada, validando que o consumidor trata isso de forma idempotente, antes de integrar os 3 serviços de verdade.
+- [x] **Permissão da `LabRole` nas filas confirmada (09/11/2026, reconfirmada em 15/11/2026 após recriação completa do cluster):** com `SQS_CONSUMER_ENABLED`, `OUTBOX_PUBLISHER_ENABLED` e `SQS_METRICS_ENABLED` ligados em produção, o pod do Execução Service faz `receiveMessage` e `getQueueAttributes` sem try/catch ao redor — qualquer `AccessDenied` apareceria como erro não tratado nos logs. Não apareceu, nem antes nem depois de recriar a EC2 do zero.
+- [x] **Idempotência com mensagem duplicada testada:** cobertura automatizada no Execução Service (`ExecucaoServiceTest.reenvioDoMesmoAgendamentoNaoContaDeNovo`) confirma que reenviar o mesmo `operationId` não reserva estoque nem gera evento duplicado.

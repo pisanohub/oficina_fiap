@@ -2,7 +2,7 @@
 
 > Documento de trabalho pessoal, pra retomar rápido. Não é o planejamento oficial do grupo (esse continua em `divisao-tarefas-fase4.md`) — é só o detalhamento técnico da minha parte.
 >
-> Última atualização: 09/11/2026.
+> Última atualização: 15/11/2026.
 
 ## ✅ Já feito
 
@@ -66,8 +66,9 @@
 
 ### 5. Fechar os ADRs
 
-- [ ] ADR-P2 e ADR-P3 estão com rascunho pronto em `documentacao/decisoes-fase4/`, faltando só preencher o "Plano de verificação" com o resultado real (depois dos itens 1–3 acima) e mover pro repositório final de cada infra.
-- [ ] ADR-P5 já pode ser marcado como "Implementada" (EC2 já está em `t3.large`).
+- [x] ADR-P2 e ADR-P3: "Plano de verificação" preenchido com o resultado real (15/11/2026) — reconfirmado depois de recriar o cluster do zero via Terraform, não ficou só no teste do dia 09/11. Ficam centralizados em `documentacao/decisoes-fase4/` (mesmo padrão da Fase 3 — não precisa mover pra cada repositório de infra, decisão do Guilherme na consolidação de 08/11).
+- [x] ADR-P5 marcado como "Aceita e implementada".
+- [x] Branch protection com `build-test` obrigatório — confirmado nos 3 repositórios de serviço (`enforce_admins: true`, check obrigatório).
 
 ## Lembrete de sessão (toda vez que for trabalhar)
 
